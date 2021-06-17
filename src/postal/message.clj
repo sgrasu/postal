@@ -88,7 +88,7 @@
       (doseq [addr addrs]
         (add-recipient! jmsg rtype addr charset)))
     :otherwise
-      (add-recipient! jmsg rtype addrs charset))
+    (add-recipient! jmsg rtype addrs charset))
   jmsg)
 
 (declare eval-bodypart eval-multipart)
@@ -190,6 +190,9 @@
                    :date :subject :body :message-id
                    :user-agent :sender]
          charset (or (:charset msg) default-charset)
+         from-address (let [{:keys [from sender]} msg]
+                        ^InternetAddress
+                        (make-address (or from sender) charset))
          jmsg (proxy [MimeMessage] [^Session session]
                 (updateMessageID []
                   (.setHeader
@@ -199,16 +202,15 @@
        (add-recipients! Message$RecipientType/TO (:to msg) charset)
        (add-recipients! Message$RecipientType/CC (:cc msg) charset)
        (add-recipients! Message$RecipientType/BCC (:bcc msg) charset)
-       (.setFrom (let [{:keys [from sender]} msg]
-                   ^InternetAddress
-                   (make-address (or from sender) charset)))
+       (cond-> from-address
+         (.setFrom from-address))
        (.setReplyTo (when-let [reply-to (:reply-to msg)]
                       (make-addresses reply-to charset)))
        (.setSubject (:subject msg) ^String charset)
        (.setSentDate (or (:date msg) (make-date)))
        (.addHeader "User-Agent" (:user-agent msg (user-agent)))
-       (add-extra! (apply dissoc msg standard))
        (add-body! (:body msg) charset)
+       (add-extra! (apply dissoc msg standard))
        (.saveChanges)))))
 
 (defn make-fixture [from to & {:keys [tag]}]

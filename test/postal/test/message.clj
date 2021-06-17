@@ -213,8 +213,10 @@
            :to "baz@bar.dom"
            :subject "Test"
            :User-Agent "Lorem Ipsum"
-           :body "Foo!"}]
-    (is (.contains (message->str m) "User-Agent: Lorem Ipsum"))))
+           :Content-Type "text/html"
+           :body "<html><body>Foo!</body></html>"}]
+    (is (.contains (message->str m) "User-Agent: Lorem Ipsum"))
+    (is (= (.getContentType (make-jmessage m)) "text/html"))))
 
 (deftest test-bad-addrs
   (let [m (message->str
